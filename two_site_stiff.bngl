@@ -1,0 +1,64 @@
+begin model
+
+begin molecule types
+    # B has two independent sites, each can be Unprotonated (U) or Protonated (P)
+    B(site1~U~P,site2~U~P)
+end molecule types
+
+begin parameters
+    # Total pool baseline concentration (1 millimolar)
+    B_total  1.0e-3
+    
+    # Environmental Proton concentration (pH = 6.0 -> 1.0e-6 M)
+    H_ions   1.0e-6
+    
+    # Ultra-fast binding kinetics (Microsecond scale constants)
+    # Fast forward diffusion-limited rate
+    k_on1     1.0e8
+    k_on2     2.0e7
+
+    # Reverse dissociation rates mapping to specific Ka values
+    k_off1   50  # Ka1 = 5.00e-7
+    k_off2   25  # Ka2 = 1.25e-6
+end parameters
+
+
+begin species
+    # Initialize the entire pool as completely unprotonated
+    B(site1~U,site2~U)  B_total
+end species
+
+begin reaction rules
+    # Rule 1: Protonation of Site 1 (Driven by background H_ions pool)
+    B(site1~U) <-> B(site1~P) k_on1*H_ions, k_off1
+    
+    # Rule 2: Protonation of Site 2 (Independent of Site 1)
+    B(site2~U) <-> B(site2~P) k_on2*H_ions, k_off2
+end reaction rules
+
+begin observables
+    # Track the macro total sum pool
+    Molecules Total_B  B()
+    
+    # Track the specific active bare ion species (No protons bound to either site)
+    Molecules Active_Bare_Ion  B(site1~U,site2~U)
+
+    # Track the first protonated state
+    Molecules First_Protonated B(site1~P,site2~U)
+
+    # Track the second protonated state
+    Molecules Second_Protonated B(site1~U,site2~P)
+    
+    # Track the fully protonated state
+    Molecules Fully_Protonated B(site1~P,site2~P)
+end observables
+
+end model
+
+# Direct the engine to compile the rules and generate the network of ODEs
+generate_network({overwrite=>1});
+
+writeSBML();
+
+# Simulate the stiff system directly using a stiff-ODE Rosenbrock solver (CVODE)
+simulate({method=>"ode", t_start=>0, t_end=>0.1, n_steps=>500});

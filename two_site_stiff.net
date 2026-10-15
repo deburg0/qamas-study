@@ -1,0 +1,34 @@
+# Created by BioNetGen 2.9.3
+begin parameters
+    1 B_total            1.0e-3  # Constant
+    2 H_ions             1.0e-6  # Constant
+    3 k_on1              1.0e8  # Constant
+    4 k_on2              2.0e7  # Constant
+    5 k_off1             50  # Constant
+    6 k_off2             25  # Constant
+    7 _rateLaw1          k_on1*H_ions  # ConstantExpression
+    8 _rateLaw2          k_on2*H_ions  # ConstantExpression
+end parameters
+begin species
+    1 B(site1~U,site2~U) B_total
+    2 B(site1~P,site2~U) 0
+    3 B(site1~U,site2~P) 0
+    4 B(site1~P,site2~P) 0
+end species
+begin reactions
+    1 1 2 _rateLaw1 #_R1
+    2 1 3 _rateLaw2 #_R2
+    3 3 4 _rateLaw1 #_R1
+    4 2 1 k_off1 #_reverse__R1
+    5 2 4 _rateLaw2 #_R2
+    6 3 1 k_off2 #_reverse__R2
+    7 4 3 k_off1 #_reverse__R1
+    8 4 2 k_off2 #_reverse__R2
+end reactions
+begin groups
+    1 Total_B              1,2,3,4
+    2 Active_Bare_Ion      1
+    3 First_Protonated     2
+    4 Second_Protonated    3
+    5 Fully_Protonated     4
+end groups
